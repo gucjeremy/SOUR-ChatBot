@@ -1,45 +1,80 @@
-# SOUR Chatbot
+# SOUR - CodeLlama-powered Coding Assistant
 
-SOUR is a simple chatbot powered by CodeLlama through Ollama, designed to help with coding-related questions and tasks.
+SOUR is a web-based coding assistant powered by CodeLlama that provides clear, well-formatted code examples and explanations.
 
-## Prerequisites
+## Features
 
-1. Install [Python](https://www.python.org/downloads/) (version 3.7 or higher)
-2. Install [Ollama](https://ollama.ai/)
-3. Pull the CodeLlama model by running:
+- 🚀 Real-time code generation and formatting
+- 💡 Intelligent response handling
+- 🎨 Syntax highlighting for multiple languages
+- ⚡ Optimized performance with request queuing
+- 🛠️ Error recovery and graceful degradation
+
+## Requirements
+
+- Python 3.8+
+- Ollama with CodeLlama model installed
+- 8GB RAM minimum
+
+## Installation
+
+1. Clone the repository:
 ```bash
-ollama pull codellama
+git clone https://github.com/yourusername/sour.git
+cd sour
 ```
 
-## Setup
-
-1. Install the required Python packages:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Make sure Ollama is running with CodeLlama model
-
-## Running the Chatbot
-
-1. Start the chatbot:
+3. Ensure Ollama is running with CodeLlama model:
 ```bash
-python sour_chatbot.py
+ollama pull codellama
+ollama run codellama
 ```
 
-2. Start chatting with SOUR! Type your questions or coding problems, and SOUR will respond using the CodeLlama model.
+## Usage
 
-3. To exit the chat, type 'exit' or press Ctrl+C.
+1. Start the server:
+```bash
+python app.py
+```
 
-## Features
+2. Open your browser and navigate to:
+```
+http://localhost:5000
+```
 
-- 🤖 Powered by CodeLlama model
-- 💬 Interactive command-line interface
-- ⚡ Real-time responses
-- 🛠 Error handling and connection management
+3. Start asking coding questions!
 
-## Notes
+## Example Queries
 
-- Ensure Ollama is running before starting the chatbot
-- The chatbot connects to Ollama's API at `localhost:11434`
-- Internet connection is not required as Ollama runs locally
+- "Write a Python function to calculate factorial using recursion"
+- "Create a simple HTML template with CSS flexbox"
+- "Show me how to implement binary search in Python"
+
+## Response Format
+
+Responses include:
+1. Brief explanation of the solution
+2. Well-commented code examples
+3. Example usage with input/output
+4. Best practices and common pitfalls
+
+## Error Handling
+
+The system includes:
+- Automatic retry with exponential backoff
+- Request rate limiting
+- Graceful degradation
+- User-friendly error messages
+
+## Contributing
+
+Feel free to open issues or submit pull requests with improvements!
+
+## License
+
+MIT License - feel free to use and modify as needed.
