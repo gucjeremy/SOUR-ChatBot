@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Rate limiting
 request_lock = Lock()
 last_request_time = {}
-MIN_REQUEST_INTERVAL = 1  # Minimum time between requests from the same IP
+MIN_REQUEST_INTERVAL = 0.5  # Reduced minimum time between requests
 
 def format_code_response(response):
     if not response:
@@ -77,7 +77,7 @@ def format_code_response(response):
     
     return formatted_response
 
-def chunk_prompt(prompt, max_length=150):
+def chunk_prompt(prompt, max_length=100):  # Reduced chunk size for faster processing
     """Break down long prompts into smaller, manageable chunks"""
     words = prompt.split()
     chunks = []
@@ -98,10 +98,10 @@ def chunk_prompt(prompt, max_length=150):
         
     return chunks
 
-def generate_response_with_retry(prompt, max_retries=2, client_ip=None):  # Reduced retries but increased timeout
+def generate_response_with_retry(prompt, max_retries=5, client_ip=None):  # Increased retries for better reliability
     """Attempt to generate a response with retries and chunking for long prompts"""
     # Optimized handling for social media website requests
-    if "website" in prompt.lower() and "social media" in prompt.lower():
+    if "website" in prompt.lower() and " social media" in prompt.lower():
         template_prompt = """Complete this HTML template with social media links:
 <!DOCTYPE html>
 <html lang="en">
@@ -140,32 +140,35 @@ def generate_response_with_retry(prompt, max_retries=2, client_ip=None):  # Redu
 </body>
 </html>"""
         try:
-            response = generate_single_response(template_prompt, max_retries, client_ip)
+            response, last_error = generate_single_response(template_prompt, max_retries, client_ip)
             if response:
-                return response
+                return response, None
             logger.warning("Failed to generate social media website response")
         except Exception as e:
             logger.error(f"Error generating social media website: {str(e)}")
-        return None
+        return None, "Error generating social media website"
         
     # For other types of prompts, use regular chunking
     elif len(prompt) > 150:
         chunks = chunk_prompt(prompt)
         responses = []
+        last_error = None
         
         for chunk in chunks:
             try:
-                chunk_response = generate_single_response(chunk, max_retries, client_ip)
+                chunk_response, chunk_error = generate_single_response(chunk, max_retries, client_ip)
                 if chunk_response:
                     responses.append(chunk_response)
                 else:
+                    last_error = chunk_error
                     logger.warning(f"Failed to generate response for chunk: {chunk}")
             except Exception as e:
+                last_error = str(e)
                 logger.error(f"Error processing chunk: {str(e)}")
                 
         if responses:
-            return ' '.join(responses)
-        return None
+            return ' '.join(responses), None
+        return None, last_error
     else:
         return generate_single_response(prompt, max_retries, client_ip)
 
@@ -190,20 +193,23 @@ def generate_single_response(prompt, max_retries=5, client_ip=None):
                 json={
                     "model": "codellama",
                     "prompt": prompt,
-                    "stream": False,
-                    "context_window": 4096,  # Maximum context for better understanding
-                    "num_predict": 2048,     # Longer responses for detailed explanations
-                    "temperature": 0.5,      # Balanced between creativity and precision
-                    "top_p": 0.95,          # Slightly more focused token selection
-                    "repeat_penalty": 1.2,   # Moderate repetition prevention
+                    "stream": False,  # Disable streaming for now as we need to modify response handling
+                    "context_window": 512,   # Minimal context for fastest responses
+                    "num_predict": 256,      # Very concise responses
+                    "temperature": 0.8,      # More deterministic responses
+                    "top_p": 0.8,           # More deterministic token selection
+                    "repeat_penalty": 1.1,   # Lighter repetition prevention
                     "stop": ["</code>", "```", "\n\n\n"],  # Clean response endings
-                    "num_ctx": 4096         # Maximum context window
+                    "num_ctx": 512          # Minimal context window for fastest processing
                 },
-                timeout=60  # Extended timeout for complex responses
+                timeout=120  # Increased timeout for complex responses
             )
             
             if response.status_code == 200:
-                return response.json().get('response', '')
+                result = response.json()
+                if isinstance(result, dict):
+                    return result.get('response', ''), None
+                return str(result), None
                 
             last_error = f"API returned status code {response.status_code}"
             
@@ -219,12 +225,12 @@ def generate_single_response(prompt, max_retries=5, client_ip=None):
             
         # Exponential backoff with jitter
         if attempt < max_retries - 1:
-            jitter = random.uniform(0, 0.2)
+            jitter = random.uniform(0, 0.5)  # Increased jitter range
             time.sleep(backoff_time + jitter)
-            backoff_time *= 2
+            backoff_time *= 1.5  # Gentler backoff multiplier
             
     logger.error(f"Failed after {max_retries} attempts. Last error: {last_error}")
-    return None
+    return None, last_error
 
 @app.route('/')
 def home():
@@ -232,6 +238,7 @@ def home():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    last_error = None  # Initialize last_error to avoid NameError
     try:
         data = request.json
         user_message = data.get('message', '').strip()
@@ -277,7 +284,7 @@ If code would be helpful, include:
 4. Common pitfalls to avoid"""
             
         # Generate response with improved error handling
-        response_text = generate_response_with_retry(enhanced_prompt, client_ip=client_ip)
+        response_text, last_error = generate_response_with_retry(enhanced_prompt, client_ip=client_ip)
         
         if response_text:
             formatted_response = format_code_response(response_text)
@@ -299,7 +306,7 @@ If code would be helpful, include:
                    "2. Being more specific\n" \
                    "3. Asking for simpler examples first\n" \
                    "4. Waiting a moment before trying again"
-        logger.error(f"Request timeout after {max_retries} attempts")
+        logger.error(f"Request timeout after 5 attempts")
         return jsonify({"error": error_msg}), 504
         
     except requests.exceptions.ConnectionError:
