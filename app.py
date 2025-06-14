@@ -5,6 +5,7 @@ import re
 import time
 import json
 import random
+import os
 from threading import Lock
 
 app = Flask(__name__)
@@ -325,4 +326,5 @@ If code would be helpful, include:
         return jsonify({"error": error_msg}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
