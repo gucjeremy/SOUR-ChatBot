@@ -15,9 +15,10 @@ services:
       mountPath: /opt/render/project/src
       sizeGB: 1
 
-  - type: background
+  - type: api
     name: codellama-api
     env: python
+    buildCommannd: ollma run codellama
     startCommand: ollama serve
     envVars:
       - key: PORT
