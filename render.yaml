@@ -14,3 +14,11 @@ services:
       name: sour-chatbot-disk
       mountPath: /opt/render/project/src
       sizeGB: 1
+
+  - type: background
+    name: codellama-api
+    env: python
+    startCommand: ollama
+    envVars:
+      - key: PORT
+        generateValue: true
