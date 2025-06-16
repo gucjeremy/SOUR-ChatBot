@@ -18,7 +18,7 @@ services:
   - type: background
     name: codellama-api
     env: python
-    startCommand: ollama
+    startCommand: ollama serve
     envVars:
       - key: PORT
         generateValue: true
