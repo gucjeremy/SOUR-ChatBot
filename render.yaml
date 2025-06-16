@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: sour-chatbot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PORT
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.9.16
+    healthCheckPath: /
+    disk:
+      name: sour-chatbot-disk
+      mountPath: /opt/render/project/src
+      sizeGB: 1
