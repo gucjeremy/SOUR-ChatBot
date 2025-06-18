@@ -190,7 +190,7 @@ def generate_single_response(prompt, max_retries=5, client_ip=None):
     for attempt in range(max_retries):
         try:
             OLLAMA_API_URL = os.environ.get('OLLAMA_API_URL', 'http://localhost:11434')
-               response = requests.post(
+            response = requests.post(
                 "http://localhost:11434/api/generate",
                 json={
                     "model": "codellama",
